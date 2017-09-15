@@ -100,6 +100,35 @@ class TestCore(util.HalibotTestCase):
 		self.assertEqual('stub_agent', mod2.received[1].origin)
 		self.assertEqual('stub_agent', mod2.received[2].origin)
 
+	def test_version(self):
+		# Test major comparison
+		self.assertTrue(halibot.Version("1.0.0") >= halibot.Version("0.1.0"))
+		self.assertTrue(halibot.Version("0.1.0") <= halibot.Version("1.0.0"))
+		self.assertTrue(halibot.Version("1.0.0") > halibot.Version("0.1.0"))
+		self.assertTrue(halibot.Version("0.1.0") < halibot.Version("1.0.0"))
+
+		# Test minor comparison
+		self.assertTrue(halibot.Version("1.1.0") >= halibot.Version("1.0.0"))
+		self.assertTrue(halibot.Version("1.0.0") <= halibot.Version("1.1.0"))
+		self.assertTrue(halibot.Version("1.1.0") > halibot.Version("1.0.0"))
+		self.assertTrue(halibot.Version("1.0.0") < halibot.Version("1.1.0"))
+
+		# Test negatives of above
+		self.assertFalse(halibot.Version("1.0.0") <= halibot.Version("0.1.0"))
+		self.assertFalse(halibot.Version("0.1.0") >= halibot.Version("1.0.0"))
+		self.assertFalse(halibot.Version("1.0.0") < halibot.Version("0.1.0"))
+		self.assertFalse(halibot.Version("0.1.0") > halibot.Version("1.0.0"))
+
+		self.assertFalse(halibot.Version("1.1.0") <= halibot.Version("1.0.0"))
+		self.assertFalse(halibot.Version("1.0.0") >= halibot.Version("1.1.0"))
+		self.assertFalse(halibot.Version("1.1.0") < halibot.Version("1.0.0"))
+		self.assertFalse(halibot.Version("1.0.0") > halibot.Version("1.1.0"))
+
+		# Test equalities
+		self.assertEqual(halibot.Version("1.0.0"), halibot.Version("1.0.0"))
+		self.assertNotEqual(halibot.Version("1.0.0"), halibot.Version("1.0.1"))
+		self.assertNotEqual(halibot.Version("1.0.0"), halibot.Version("1.1.1"))
+		self.assertNotEqual(halibot.Version("1.0.0"), halibot.Version("0.0.0"))
+
 if __name__ == '__main__':
 	unittest.main()
-
