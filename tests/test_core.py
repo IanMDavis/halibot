@@ -5,15 +5,27 @@ import util
 import halibot
 import unittest
 
+topic1_text = 'Help text one'
+topic2_text = 'Help text two'
+
 class StubModule(halibot.HalModule):
 	inited = False
+
+	topics = {
+		'topic1': lambda: topic1_text,
+		'topic2': topic2_text
+	}
 
 	def init(self):
 		self.inited = True
 		self.received = []
+		self.received_mytype = []
 
 	def receive(self, msg):
 		self.received.append(msg)
+
+	def receive_mytype(self, msg):
+		self.received_mytype.append(msg)
 
 class StubReplier(halibot.HalModule):
 	inited = False
@@ -71,6 +83,7 @@ class TestCore(util.HalibotTestCase):
 		bar = halibot.Message(body='bar')
 		baz = halibot.Message(body='baz', origin='glub_agent')
 		qua = halibot.Message(body='qua')
+		qua2 = halibot.Message(body='qua', type='mytype')
 
 		agent.dispatch(foo) # 0
 		agent.send_to(bar, [ 'stub_mod/able', 'stub_mod2/baker' ] ) # 1
@@ -78,6 +91,8 @@ class TestCore(util.HalibotTestCase):
 		agent.dispatch(baz) # 2
 		agent.connect(mod2)
 		agent.dispatch(qua) # 3
+
+		agent.dispatch(qua2) # 3
 
 		util.waitOrTimeout(100, lambda: len(mod.received) == 4 and len(mod2.received) == 3)
 
@@ -115,6 +130,13 @@ class TestCore(util.HalibotTestCase):
 		self.assertEqual('stub_agent', mod2.received[1].origin)
 		self.assertEqual('stub_agent', mod2.received[2].origin)
 
+		# Check mytype messages
+		self.assertEqual(1, len(mod.received_mytype))
+		self.assertEqual(1, len(mod2.received_mytype))
+		self.assertEqual(qua2.body, mod.received_mytype[0].body)
+		self.assertEqual(qua2.body, mod2.received_mytype[0].body)
+
+
 	def test_send_reply(self):
 		agent = StubAgent(self.bot)
 		mod = StubReplier(self.bot)
@@ -148,6 +170,19 @@ class TestCore(util.HalibotTestCase):
 		with self.assertRaises(halibot.SyncSendSelfException):
 			agent.sync_send_to(foo, ['stub_agent'])
 
+	def test_help(self):
+		agent = StubAgent(self.bot)
+		mod = StubModule(self.bot)
+		self.bot.add_instance('stub_agent', agent)
+		self.bot.add_instance('stub_module', mod)
+
+		msgt0 = halibot.Message(type='help', body=[])
+		msgt1 = halibot.Message(type='help', body=['topic1'])
+		msgt2 = halibot.Message(type='help', body=['topic2'])
+
+		self.assertEqual(set(agent.sync_send_to(msgt0, ['stub_module'])['stub_module'][0].body), set(['topic1', 'topic2']))
+		self.assertEqual(agent.sync_send_to(msgt1, ['stub_module'])['stub_module'][0].body, topic1_text)
+		self.assertEqual(agent.sync_send_to(msgt2, ['stub_module'])['stub_module'][0].body, topic2_text)
 
 if __name__ == '__main__':
 	unittest.main()

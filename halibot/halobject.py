@@ -80,13 +80,30 @@ class HalObject():
 
 	async def _receive(self, msg):
 		try:
-			self.receive(msg)
+			fname = 'receive_' + msg.type
+			if hasattr(self, fname) and callable(getattr(self, fname)):
+				# Type specific receive function
+				getattr(self, fname)(msg)
+			else:
+				# Generic receive function
+				self.receive(msg)
 		except Exception as e:
 			traceback.print_exc()
 
 	def receive(self, msg):
 		pass
 
+	def receive_help(self, msg):
+		if hasattr(self, 'topics'):
+			if msg.body == []:
+				# Retrieve available topics
+				self.reply(msg, body=list(self.topics.keys()))
+			else:
+				# Retrieve help text for topic
+				key = '/'.join(msg.body)
+				if key in self.topics:
+					t = self.topics[key]
+					self.reply(msg, body=t() if callable(t) else t)
 
 	class Configurer(HalConfigurer):
 		pass
